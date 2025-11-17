@@ -1,0 +1,21 @@
+* parakeyt firmware config
+convert a ~config.json~ into ~config.h~
+
+** rename map
+- ~split~ -> ~CONFIG_SPLIT~ (bool)
+  - compile firmware for a split layout
+  - unimplemented
+- ~gpio~ -> ~CONFIG_ROWS~ (uint[])
+  - index names for rows
+  - unimplemented
+- ~adc~ -> ~CONFIG_COLS~ (uint[])
+  - index names for cols
+  - unimplemented
+- ~keys[N]~ -> ~CONFIG_KEYS~ (kc_code[ROW][COL])
+  - row/col KC map
+  - unimplemented
+
+** unused
+- width
+- length
+- tilt
