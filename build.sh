@@ -1,6 +1,7 @@
 #!/bin/bash
 export PICO_SDK_PATH=/opt/pico-sdk/
 export PICO_EXTRAS_PATH=/opt/pico-extras/
+export PICO_PLATFORM=rp2040
 
 mkdir -p "build/" && cd "build/"
 if [[ "$?" != 0 ]]; then
@@ -8,7 +9,7 @@ if [[ "$?" != 0 ]]; then
     exit
 fi
 
-cmake -DCMAKE_BUILD_TYPE=Release .. && make
+cmake -DCMAKE_BUILD_TYPE=Release .. && make --jobs $(nproc)
 
 if [[ "$?" != 0 ]]; then
     echo 'build failed at make or cmake!'
