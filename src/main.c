@@ -44,17 +44,19 @@ void run_core0()
 		// collect (for time measure purpose)
 		uint16_t matrix[ROWS][COLUMNS] = { 0 };
 		uint64_t st = time_us_64();
-		for (int i = 0; i < ROWS; ++i) {
-			enable_row(i);
-			for (int j = 0; j < COLUMNS; ++j) {
-				uint16_t val = read_col(j);
-				matrix[i][j] = val;
+		printf("performing 1000 polls AFAP\n");
+		for (int z = 0; z < 1000; ++z) {
+			for (int i = 0; i < ROWS; ++i) {
+				enable_row(i);
+				for (int j = 0; j < COLUMNS; ++j) {
+					read_col(j, &matrix[i][j]);
+				}
 			}
 		}
 		uint64_t dt = time_us_64() - st;
 
 		// print
-		printf("state at %lli ms:\n", st / 1000);
+		printf("final state at %lli ms:\n", st / 1000);
 		for (int i = 0; i < ROWS; ++i) {
 			for (int j = 0; j < COLUMNS; ++j) {
 				printf("[%04i] ", matrix[i][j]);

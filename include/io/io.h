@@ -2,6 +2,6 @@
 
 void init_pins(void);
 
-uint16_t read_col(uint n);
+void read_col(uint n, uint16_t *buf);
 
 void enable_row(uint n);

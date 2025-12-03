@@ -28,6 +28,7 @@ struct TLA2528 {
 	i2c_inst_t *i2c_instance;
 };
 
-void setup_TLA2528(struct TLA2528 *mcp);
+void setup_TLA2528(struct TLA2528 *tla);
 
-void read_TLA2528(struct TLA2528 *mcp);
+// read sensors from last to first
+void read_TLA2528(struct TLA2528 *tla, uint8_t pin, uint16_t vals[]);
