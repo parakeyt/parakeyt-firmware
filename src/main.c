@@ -64,6 +64,7 @@ void run_core0()
 			printf("\n");
 		}
 		printf("elapsed time on collection: %lli us\n", dt);
+		printf("that's %lli.%lli s\n", dt / 1000000, dt % 1000000);
 		sleep_ms(2000);
 	}
 }
