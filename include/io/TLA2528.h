@@ -6,6 +6,7 @@
 #include "pico/stdlib.h"
 
 #define TLA2528_WRITE_REG 0b00001000
+#define TLA2528_READ_REG 0b00010000
 
 #define TLA2528_SYSTEM_STATUS 0x0
 #define TLA2528_GENERAL_CFG 0x1
@@ -31,4 +32,4 @@ struct TLA2528 {
 void setup_TLA2528(struct TLA2528 *tla);
 
 // read sensors from last to first
-void read_TLA2528(struct TLA2528 *tla, uint8_t pin, uint16_t vals[]);
+void read_TLA2528(struct TLA2528 *tla, uint8_t pin, uint16_t *vals);

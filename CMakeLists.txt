@@ -33,6 +33,7 @@ add_executable(parakeyt_fw
     src/io/io.c
     src/io/TLA2528.c
     src/io/TLC59208.c
+    src/io/MCP23008.c
     src/main.c
     src/util.c
 )

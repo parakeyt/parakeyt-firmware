@@ -16,11 +16,28 @@ void write_reg_TLA2528(struct TLA2528 *tla, uint8_t addr, uint8_t data)
 	i2c_write_blocking(tla->i2c_instance, tla->address, buf, sizeof(uint8_t) * 3, false);
 }
 
+uint8_t read_reg_TLA2528(struct TLA2528 *tla, uint8_t addr)
+{
+	uint8_t res = 0b1;
+	uint8_t buf[2] = { TLA2528_READ_REG, addr };
+	i2c_write_blocking(tla->i2c_instance, tla->address, buf, sizeof(uint8_t) * 2, false);
+	i2c_read_blocking(tla->i2c_instance, tla->address, (uint8_t *)(&res), 1, false);
+	return buf[0];
+}
+
 void setup_TLA2528(struct TLA2528 *tla)
 {
 	printf("Setting up TLA2528 with SDA %i and SCL %i at 0x%X\n", tla->sda_pin, tla->scl_pin, tla->address);
 
-	//write_reg_TLA2528(tla, TLA2528_GENERAL_CFG, 0b00000001); // reset
+	write_reg_TLA2528(tla, TLA2528_GENERAL_CFG, 0b00000001); // reset
+	// await reset
+	while (true) {
+		uint8_t res = read_reg_TLA2528(tla, TLA2528_GENERAL_CFG) & 0b1;
+		printf("TLA reset status: %i\n", res);
+		if (res == 0)
+			break;
+	}
+	printf("TLA reset complete\n");
 	write_reg_TLA2528(tla, TLA2528_PIN_CFG, 0b00000000); // all pins as analog in
 	//write_reg_TLA2528(tla, TLA2528_DATA_CFG, 0b10010000); // set fixed pattern for adc output (testing)
 	//write_reg_TLA2528(tla, TLA2528_OSR_CFG,     0b00000111); // highest OSR (testing)
@@ -32,8 +49,10 @@ void setup_TLA2528(struct TLA2528 *tla)
 	printf("Done setting up TLA2528\n");
 }
 
-void read_TLA2528(struct TLA2528 *tla, uint8_t pin, uint16_t vals[])
+void read_TLA2528(struct TLA2528 *tla, uint8_t pin, uint16_t *vals)
 {
 	write_reg_TLA2528(tla, TLA2528_CHANNEL_SEL, pin);
-	i2c_read_blocking(tla->i2c_instance, tla->address, (uint8_t *)(&vals[0]), 2, false);
+	uint8_t buf[2] = { 0 };
+	i2c_read_blocking(tla->i2c_instance, tla->address, &buf[0], 2, false);
+	*vals = ((buf[0] << 8) + buf[1]) >> 4;
 }

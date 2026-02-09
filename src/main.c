@@ -29,7 +29,7 @@ int main()
 	//multicore_launch_core1(&run_core1);
 	run_core0();
 
-	// reset the pico in event loop ends
+	// reset the pico if event loop ends
 	watchdog_enable(1, 1);
 	while (1)
 		;
@@ -47,7 +47,7 @@ void run_core0()
 		printf("performing 1000 polls AFAP\n");
 		for (int z = 0; z < 1000; ++z) {
 			for (int i = 0; i < ROWS; ++i) {
-				enable_row(i);
+				//enable_row(i);
 				for (int j = 0; j < COLUMNS; ++j) {
 					read_col(j, &matrix[i][j]);
 				}
@@ -59,7 +59,7 @@ void run_core0()
 		printf("final state at %lli ms:\n", st / 1000);
 		for (int i = 0; i < ROWS; ++i) {
 			for (int j = 0; j < COLUMNS; ++j) {
-				printf("[%04i] ", matrix[i][j]);
+				printf("[%i] ", matrix[i][j]);
 			}
 			printf("\n");
 		}

@@ -6,14 +6,16 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 
-#include "../../include/io/mcp23008.h"
+#include "pico/time.h"
 
-void setup_mcp23008(struct MCP23008 *mcp)
+#include "../../include/io/MCP23008.h"
+
+void setup_MCP23008(struct MCP23008 *mcp)
 {
 	printf("Setup MCP23008 with SDA %i and SCL %i at %X\n", mcp->sda_pin, mcp->scl_pin, mcp->address);
 
 	// set all pins as output
-	char buf[2] = {
+	uint8_t buf[2] = {
 		MCP23008_IODIR,
 		0b00000000,
 	};
@@ -22,11 +24,11 @@ void setup_mcp23008(struct MCP23008 *mcp)
 	printf("Done setting up MCP23008\n");
 }
 
-void update_mcp23008_state(struct MCP23008 *mcp)
+void update_MCP23008_state(struct MCP23008 *mcp, uint8_t pin)
 {
-	char buf[2] = {
+	uint8_t buf[2] = {
 		MCP23008_GPIO,
-		mcp->state,
+		(0b1 << pin),
 	};
 	i2c_write_blocking(mcp->i2c_instance, mcp->address, buf, sizeof(char) * 2, false);
 }
