@@ -25,9 +25,10 @@ uint8_t read_reg_TLA2528(struct TLA2528 *tla, uint8_t addr)
 	return buf[0];
 }
 
-void setup_TLA2528(struct TLA2528 *tla)
+void setup_TLA2528(struct TLA2528 *tla, enum TLA2825_Mode mode)
 {
-	printf("Setting up TLA2528 with SDA %i and SCL %i at 0x%X\n", tla->sda_pin, tla->scl_pin, tla->address);
+	printf("Setting up TLA2528 with SDA %i and SCL %i at 0x%X in mode %i\n", tla->sda_pin, tla->scl_pin,
+	       tla->address, mode);
 
 	write_reg_TLA2528(tla, TLA2528_GENERAL_CFG, 0b00000001); // reset
 	// await reset
@@ -37,15 +38,32 @@ void setup_TLA2528(struct TLA2528 *tla)
 		if (res == 0)
 			break;
 	}
+	// check crc fuse
+	if ((read_reg_TLA2528(tla, TLA2528_SYSTEM_STATUS) & 0b100) > 0) {
+		printf("CRC fuse failure!\n");
+	}
+
 	printf("TLA reset complete\n");
-	write_reg_TLA2528(tla, TLA2528_PIN_CFG, 0b00000000); // all pins as analog in
-	//write_reg_TLA2528(tla, TLA2528_DATA_CFG, 0b10010000); // set fixed pattern for adc output (testing)
-	//write_reg_TLA2528(tla, TLA2528_OSR_CFG,     0b00000111); // highest OSR (testing)
-	//write_reg_TLA2528(tla, TLA2528_OPMODE_CFG, 0b0000000); // change sampling speed to fastest and fast oscillator
-	//write_reg_TLA2528(tla, TLA2528_AUTO_SEQ_CH_SEL, 0b00000000); // no pins in sequencing mode
-	//write_reg_TLA2528(tla, TLA2528_SEQUENCE_CFG, 0b00000000); // enable auto sequencing
-	write_reg_TLA2528(tla, TLA2528_GENERAL_CFG,
-			  0b00001100); // set all channels to analog inputs and start conversion
+
+	if (mode == ADC) {
+		printf("TLA as ADC\n");
+		write_reg_TLA2528(tla, TLA2528_PIN_CFG, 0b00000000); // all pins as analog in
+		//write_reg_TLA2528(tla, TLA2528_DATA_CFG, 0b10010000); // set fixed pattern for adc output (testing)
+		//write_reg_TLA2528(tla, TLA2528_OSR_CFG,     0b00000111); // highest OSR (testing)
+		//write_reg_TLA2528(tla, TLA2528_OPMODE_CFG, 0b0000000); // change sampling speed to fastest and fast oscillator
+		//write_reg_TLA2528(tla, TLA2528_AUTO_SEQ_CH_SEL, 0b00000000); // no pins in sequencing mode
+		//write_reg_TLA2528(tla, TLA2528_SEQUENCE_CFG, 0b00000000); // enable auto sequencing
+		write_reg_TLA2528(tla, TLA2528_GENERAL_CFG,
+				  0b00001100); // set all channels to analog inputs and start conversion
+	} else if (mode == DRIVER) {
+		printf("TLA as driver\n");
+		// all pins as gpio
+		write_reg_TLA2528(tla, TLA2528_PIN_CFG, 0b11111111);
+		write_reg_TLA2528(tla, TLA2528_GPIO_CFG, 0b11111111);
+		write_reg_TLA2528(tla, TLA2528_GPIO_DRIVE_CFG, 0b11111111);
+		// set as zero
+		write_reg_TLA2528(tla, TLA2528_GPO_VALUE, 0b00000000);
+	}
 	printf("Done setting up TLA2528\n");
 }
 
@@ -55,4 +73,9 @@ void read_TLA2528(struct TLA2528 *tla, uint8_t pin, uint16_t *vals)
 	uint8_t buf[2] = { 0 };
 	i2c_read_blocking(tla->i2c_instance, tla->address, &buf[0], 2, false);
 	*vals = ((buf[0] << 8) + buf[1]) >> 4;
+}
+
+void write_TLA2528(struct TLA2528 *tla, uint8_t pin)
+{
+	write_reg_TLA2528(tla, TLA2528_GPO_VALUE, 0b10000000 /* (0b1 << pin) */);
 }

@@ -45,9 +45,9 @@ void run_core0()
 		uint16_t matrix[ROWS][COLUMNS] = { 0 };
 		uint64_t st = time_us_64();
 		printf("performing 1000 polls AFAP\n");
-		for (int z = 0; z < 1000; ++z) {
+		for (int z = 0; z < 1; ++z) {
 			for (int i = 0; i < ROWS; ++i) {
-				//enable_row(i);
+				enable_row(i);
 				for (int j = 0; j < COLUMNS; ++j) {
 					read_col(j, &matrix[i][j]);
 				}
@@ -65,7 +65,7 @@ void run_core0()
 		}
 		printf("elapsed time on collection: %lli us\n", dt);
 		printf("that's %lli.%lli s\n", dt / 1000000, dt % 1000000);
-		sleep_ms(2000);
+		sleep_ms(1000);
 	}
 }
 

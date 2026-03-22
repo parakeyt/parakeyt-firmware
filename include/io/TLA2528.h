@@ -16,7 +16,7 @@
 #define TLA2528_PIN_CFG 0x5
 #define TLA2528_GPIO_CFG 0x7
 #define TLA2528_GPIO_DRIVE_CFG 0x9
-#define TLA2528_GPIO_VALUE 0xB
+#define TLA2528_GPO_VALUE 0xB
 #define TLA2528_GPI_VALUE 0xD
 #define TLA2528_SEQUENCE_CFG 0x10
 #define TLA2528_CHANNEL_SEL 0x11
@@ -29,7 +29,12 @@ struct TLA2528 {
 	i2c_inst_t *i2c_instance;
 };
 
-void setup_TLA2528(struct TLA2528 *tla);
+enum TLA2825_Mode { ADC, DRIVER };
+
+void setup_TLA2528(struct TLA2528 *tla, enum TLA2825_Mode mode);
 
 // read sensors from last to first
 void read_TLA2528(struct TLA2528 *tla, uint8_t pin, uint16_t *vals);
+
+// write to gpio register
+void write_TLA2528(struct TLA2528 *tla, uint8_t pin);

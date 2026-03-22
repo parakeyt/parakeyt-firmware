@@ -6,6 +6,7 @@
 #include "hardware/gpio.h"
 #include "hardware/adc.h"
 #include "hardware/i2c.h"
+#include "pico/time.h"
 
 #include "../../config/config.h"
 #include "../../include/io/io.h"
@@ -21,7 +22,7 @@ const uint8_t colmap[COLUMNS][2] = COLS_MAP;
 struct TLA2528 adcs[ADC_CNT] = { 0 };
 const uint8_t adc_addrs[ADC_CNT] = ADC_ADDRS;
 
-struct MCP23008 drivers[DRIVER_CNT] = { 0 };
+struct TLA2528 drivers[DRIVER_CNT] = { 0 };
 const uint8_t driver_addrs[DRIVER_CNT] = DRIVER_ADDRS;
 
 void init_pins(void)
@@ -39,7 +40,7 @@ void init_pins(void)
 		adcs[i].sda_pin = 0;
 		adcs[i].scl_pin = 1;
 		adcs[i].i2c_instance = i2c0;
-		setup_TLA2528(&adcs[i]);
+		setup_TLA2528(&adcs[i], ADC);
 	}
 
 	// init drivers
@@ -48,7 +49,7 @@ void init_pins(void)
 		drivers[i].sda_pin = 0;
 		drivers[i].scl_pin = 1;
 		drivers[i].i2c_instance = i2c0;
-		setup_MCP23008(&drivers[i]);
+		setup_TLA2528(&drivers[i], DRIVER);
 	}
 }
 
@@ -63,5 +64,6 @@ void enable_row(uint n)
 {
 	uint8_t driver = rowmap[n][0];
 	uint8_t pin = rowmap[n][1];
-	update_MCP23008_state(&drivers[driver], pin);
+	write_TLA2528(&drivers[driver], pin);
+	sleep_ms(2);
 }
