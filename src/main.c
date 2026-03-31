@@ -23,7 +23,10 @@ int main()
 	stdio_init_all();
 	sleep_ms(3000);
 	printf("starting\n");
+	init_onboard_led();
+	set_onboard_led(25, 25, 0);
 	init_pins();
+	set_onboard_led(0, 25, 0);
 
 	// main loop
 	//multicore_launch_core1(&run_core1);

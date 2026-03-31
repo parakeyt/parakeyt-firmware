@@ -29,6 +29,7 @@ endif()
 
 pico_sdk_init()
 
+
 add_executable(parakeyt_fw
     src/io/io.c
     src/io/TLA2528.c
@@ -48,6 +49,7 @@ target_link_libraries(parakeyt_fw
     pico_stdio
     pico_sync
     hardware_i2c
+    hardware_pio
     hardware_gpio
     hardware_adc
     hardware_clocks
@@ -55,6 +57,7 @@ target_link_libraries(parakeyt_fw
     pico_binary_info
     hardware_vreg
 )
+pico_generate_pio_header(parakeyt_fw ${CMAKE_CURRENT_LIST_DIR}/src/io/ws2812.pio)
 pico_add_extra_outputs(parakeyt_fw)
 
 add_subdirectory(testing)

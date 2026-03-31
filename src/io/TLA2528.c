@@ -77,5 +77,5 @@ void read_TLA2528(struct TLA2528 *tla, uint8_t pin, uint16_t *vals)
 
 void write_TLA2528(struct TLA2528 *tla, uint8_t pin)
 {
-	write_reg_TLA2528(tla, TLA2528_GPO_VALUE, 0b10000000 /* (0b1 << pin) */);
+	write_reg_TLA2528(tla, TLA2528_GPO_VALUE, (0b1 << pin));
 }

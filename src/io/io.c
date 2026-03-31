@@ -8,6 +8,7 @@
 #include "hardware/i2c.h"
 #include "pico/time.h"
 
+#include "ws2812.pio.h"
 #include "../../config/config.h"
 #include "../../include/io/io.h"
 #include "../../include/io/TLA2528.h"
@@ -66,4 +67,21 @@ void enable_row(uint n)
 	uint8_t pin = rowmap[n][1];
 	write_TLA2528(&drivers[driver], pin);
 	sleep_ms(2);
+}
+
+#define LED_PIN 16
+
+static PIO pio;
+static uint sm;
+static uint offset;
+void init_onboard_led()
+{
+	pio_claim_free_sm_and_add_program_for_gpio_range(&ws2812_program, &pio, &sm, &offset, LED_PIN, 1, true);
+
+	ws2812_program_init(pio, sm, offset, LED_PIN, 800000, false);
+}
+void set_onboard_led(uint8_t r, uint8_t g, uint8_t b)
+{
+	uint32_t grb = ((g << 16) + (r << 8) + (b)) << 8;
+	pio_sm_put_blocking(pio, sm, grb);
 }
