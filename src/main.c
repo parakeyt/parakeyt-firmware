@@ -46,7 +46,7 @@ int main()
 static uint16_t matrix[ROWS][COLUMNS] = { 0 };
 static uint8_t pressed[ROWS][COLUMNS] = { 0 };
 static bool keys_pressed = false;
-static uint8_t report_data[NKRO] = { HID_KEY_KEYPAD_DECIMAL }; // codes
+static uint8_t report_data[NKRO] = { 0 }; // codes
 static uint8_t layer = 0;
 static uint8_t keymap[LAYERS][ROWS][COLUMNS] = KEYCODE_MAP;
 
@@ -61,7 +61,12 @@ void remove_from_report(uint8_t i, uint8_t j)
 
 void update_report_data(uint16_t cur, uint16_t last, uint16_t i, uint16_t j)
 {
-	keys_pressed = false;
+	if (report_cnt > 100) {
+		keys_pressed = !keys_pressed;
+		report_data[0] = HID_KEY_L;
+		report_cnt = 0;
+	}
+	++report_cnt;
 }
 
 void run_core1()
@@ -94,13 +99,20 @@ static void send_hid_report(bool keys_pressed)
 	}
 
 	static bool send_empty = false;
+	static bool last_pressed = false;
 
 	if (keys_pressed) {
+		if (!last_pressed) {
+			set_onboard_led(25, 0, 0);
+		}
 		tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, report_data);
 		send_empty = true;
+		last_pressed = true;
 	} else {
 		// send empty key report if previously has key pressed
+		last_pressed = false;
 		if (send_empty) {
+			set_onboard_led(0, 0, 25);
 			tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, NULL);
 		}
 		send_empty = false;
@@ -109,7 +121,7 @@ static void send_hid_report(bool keys_pressed)
 
 void hid_task(void)
 {
-	const uint32_t interval_ms = 1;
+	const uint32_t interval_ms = 10;
 	static uint32_t start_ms = 0;
 
 	if (board_millis() - start_ms < interval_ms) {
