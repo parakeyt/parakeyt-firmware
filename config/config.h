@@ -7,6 +7,7 @@
 #define DRIVER_CNT 1
 #define DRIVER_ADDRS { 0x16 }
 
+// dimensions
 #define LAYERS 1
 #define ROWS 4
 #define COLUMNS 4
