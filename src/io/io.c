@@ -66,7 +66,7 @@ void enable_row(uint n)
 	uint8_t driver = rowmap[n][0];
 	uint8_t pin = rowmap[n][1];
 	write_TLA2528(&drivers[driver], pin);
-	//sleep_ms(2); // TODO pull-down resistor
+	sleep_ms(5); // TODO pull-down resistor?
 }
 
 #define LED_PIN 16

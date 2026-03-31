@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 include(pico_sdk_import.cmake)
 
-project(parakeyt_fw)
+project(parakeyt_fw C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -30,19 +30,24 @@ endif()
 pico_sdk_init()
 
 
-add_executable(parakeyt_fw
+add_executable(parakeyt_fw)
+target_sources(parakeyt_fw PUBLIC
     src/io/io.c
     src/io/TLA2528.c
     src/io/TLC59208.c
     src/io/MCP23008.c
     src/main.c
     src/util.c
+    src/usb_descriptors.c
 )
 
-pico_enable_stdio_usb(parakeyt_fw 1)
-pico_enable_stdio_uart(parakeyt_fw 0)
+target_include_directories(parakeyt_fw PUBLIC
+    ./include)
 
 target_link_libraries(parakeyt_fw
+    pico_unique_id
+    tinyusb_device
+    tinyusb_board
     pico_stdlib
     pico_time
     pico_rand
@@ -57,6 +62,8 @@ target_link_libraries(parakeyt_fw
     pico_binary_info
     hardware_vreg
 )
+pico_enable_stdio_usb(parakeyt_fw 0)
+pico_enable_stdio_uart(parakeyt_fw 0)
 pico_generate_pio_header(parakeyt_fw ${CMAKE_CURRENT_LIST_DIR}/src/io/ws2812.pio)
 pico_add_extra_outputs(parakeyt_fw)
 
