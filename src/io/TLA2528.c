@@ -49,10 +49,11 @@ void setup_TLA2528(struct TLA2528 *tla, enum TLA2825_Mode mode)
 		printf("TLA as ADC\n");
 		write_reg_TLA2528(tla, TLA2528_PIN_CFG, 0b00000000); // all pins as analog in
 		//write_reg_TLA2528(tla, TLA2528_DATA_CFG, 0b10010000); // set fixed pattern for adc output (testing)
-		//write_reg_TLA2528(tla, TLA2528_OSR_CFG,     0b00000111); // highest OSR (testing)
-		//write_reg_TLA2528(tla, TLA2528_OPMODE_CFG, 0b0000000); // change sampling speed to fastest and fast oscillator
-		//write_reg_TLA2528(tla, TLA2528_AUTO_SEQ_CH_SEL, 0b00000000); // no pins in sequencing mode
-		//write_reg_TLA2528(tla, TLA2528_SEQUENCE_CFG, 0b00000000); // enable auto sequencing
+		write_reg_TLA2528(tla, TLA2528_OSR_CFG, 0b00000111); // disable OSR
+		write_reg_TLA2528(tla, TLA2528_OPMODE_CFG,
+				  0b0000000); // change sampling speed to fastest and fast oscillator
+		write_reg_TLA2528(tla, TLA2528_AUTO_SEQ_CH_SEL, 0b00000000); // no pins in sequencing mode
+		write_reg_TLA2528(tla, TLA2528_SEQUENCE_CFG, 0b00000000); // no auto sequencing
 		write_reg_TLA2528(tla, TLA2528_GENERAL_CFG,
 				  0b00001100); // set all channels to analog inputs and start conversion
 	} else if (mode == DRIVER) {

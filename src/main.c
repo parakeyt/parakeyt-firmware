@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
+#include "pico/sync.h"
 #include "hardware/watchdog.h"
 #include "pico/multicore.h"
 #include "pico/time.h"
@@ -18,6 +19,7 @@
 void run_core0();
 void run_core1();
 void hid_task(void);
+static mutex_t hid_report_mutex;
 
 int main()
 {
@@ -34,6 +36,7 @@ int main()
 	set_onboard_led(0, 25, 0);
 
 	// main loop
+	mutex_init(&hid_report_mutex);
 	multicore_launch_core1(&run_core1);
 	run_core0();
 
@@ -43,30 +46,95 @@ int main()
 		;
 }
 
+// analog keystate matrix
 static uint16_t matrix[ROWS][COLUMNS] = { 0 };
+
+// pressed is zero when not press, index + 1 of corresponding report_data when pressed.
 static uint8_t pressed[ROWS][COLUMNS] = { 0 };
-static bool keys_pressed = false;
-static uint8_t report_data[NKRO] = { 0 }; // codes
-static uint8_t layer = 0;
+
+// keymap
+static uint8_t layer = 0; // current layer
 static uint8_t keymap[LAYERS][ROWS][COLUMNS] = KEYCODE_MAP;
 
+// HID report info
+static bool keys_pressed = false;
+static uint8_t report_data[NKRO] = { 0 };
 static uint8_t report_cnt = 0;
+
 void add_to_report(uint8_t i, uint8_t j)
 {
+	// do nothing if there is no report space
+	if (report_cnt >= NKRO) {
+		return;
+	}
+
+	mutex_enter_blocking(&hid_report_mutex);
+	// otherwise, add in first available report slot
+	for (int k = 0; k < NKRO; ++k) {
+		if (report_data[k] == 0) {
+			report_data[k] = keymap[layer][i][j];
+			pressed[i][j] = k + 1;
+			++report_cnt;
+			keys_pressed = true;
+			break;
+		}
+	}
+	mutex_exit(&hid_report_mutex);
 }
 
 void remove_from_report(uint8_t i, uint8_t j)
 {
+	// do nothing if it certainly not pressed
+	if (report_cnt <= 0) {
+		return;
+	}
+	mutex_enter_blocking(&hid_report_mutex);
+	report_data[pressed[i][j] - 1] = 0;
+	pressed[i][j] = 0;
+	--report_cnt;
+	keys_pressed = (report_cnt > 0);
+	mutex_exit(&hid_report_mutex);
 }
 
-void update_report_data(uint16_t cur, uint16_t last, uint16_t i, uint16_t j)
+void update_report_data(uint16_t last, uint16_t i, uint16_t j)
 {
-	if (report_cnt > 100) {
-		keys_pressed = !keys_pressed;
-		report_data[0] = HID_KEY_L;
-		report_cnt = 0;
+	uint16_t cur = matrix[i][j];
+	// currently released
+	if (pressed[i][j] == 0) {
+		// downward motion (smaller number means further pressed)
+		if (last > cur) {
+			// beyond thresh, press it!
+			if (last - cur > THRESH) {
+				add_to_report(i, j);
+			}
+			// not beyond thresh, keep last value
+			else {
+				matrix[i][j] = last;
+			}
+		}
+		// upward motion
+		else {
+			// new highest point is cur, so keep it
+		}
 	}
-	++report_cnt;
+	// currently pressed
+	else {
+		// downward motion (smaller number means furthes pressed)
+		if (last > cur) {
+			// do nothing, new lowest point is cur!
+		}
+		// upward motion
+		else {
+			// beyond thresh, release it!
+			if (cur - last > THRESH) {
+				remove_from_report(i, j);
+			}
+			// not beyond thresh, keep last value
+			else {
+				matrix[i][j] = last;
+			}
+		}
+	}
 }
 
 void run_core1()
@@ -78,7 +146,7 @@ void run_core1()
 			for (int j = 0; j < COLUMNS; ++j) {
 				uint16_t last = matrix[i][j];
 				read_col(j, &matrix[i][j]);
-				update_report_data(matrix[i][j], last, i, j);
+				update_report_data(last, i, j);
 			}
 		}
 	}
@@ -98,25 +166,25 @@ static void send_hid_report(bool keys_pressed)
 		return;
 	}
 
+	mutex_enter_blocking(&hid_report_mutex);
+
 	static bool send_empty = false;
-	static bool last_pressed = false;
 
 	if (keys_pressed) {
-		if (!last_pressed) {
+		if (!send_empty) {
 			set_onboard_led(25, 0, 0);
 		}
 		tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, report_data);
 		send_empty = true;
-		last_pressed = true;
 	} else {
 		// send empty key report if previously has key pressed
-		last_pressed = false;
 		if (send_empty) {
-			set_onboard_led(0, 0, 25);
+			set_onboard_led(25, 0, 25);
 			tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, NULL);
 		}
 		send_empty = false;
 	}
+	mutex_exit(&hid_report_mutex);
 }
 
 void hid_task(void)

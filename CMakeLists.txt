@@ -30,13 +30,12 @@ endif()
 pico_sdk_init()
 
 
-add_executable(parakeyt_fw)
+add_executable(parakeyt_fw src/main.c)
 target_sources(parakeyt_fw PUBLIC
     src/io/io.c
     src/io/TLA2528.c
     src/io/TLC59208.c
     src/io/MCP23008.c
-    src/main.c
     src/util.c
     src/usb_descriptors.c
 )
