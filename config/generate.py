@@ -2,10 +2,33 @@
 # generate config.h from config.json
 
 import argparse, math, json
+from dataclasses import dataclass
+
+# obj
+lut = {
+    '+': 'KEYPAD_ADD',
+    '-': 'KEYPAD_SUBTRACT',
+    'RET': 'RETURN',
+    '.': "PERIOD",
+    '/': "SLASH",
+    '*': "KEYPAD_MULTIPLY",
+}
+@dataclass
+class ConfigKey:
+    """A key from config.json"""
+    row: int
+    col: int
+    code: str
+
+    def from_label(row, col, label):
+        label = label.upper()
+        if label in lut:
+            label = lut.get(label)
+        label = f"HID_KEY_{label}"
+        return ConfigKey(row,col,label) # TODO
 
 # set up args
 parser = argparse.ArgumentParser()
-parser.add_argument("verb", help="specify action ('test' or 'convert')")
 parser.add_argument("-i", "--infile", help="input config.json file location")
 parser.add_argument("-o", "--outfile", help="output config.h file location")
 parser.add_argument("-v", "--verbose", help="print useless logging", action="store_true")
@@ -18,156 +41,115 @@ def vprint(s):
 
 vprint("verbose logging is enabled")
 
-# conversion consts
-PINS_PER_ADC = 8
-PINS_PER_DRIVER = 8
-MAX_SENSORS_PER_DRIVER = 24
+# config.h header
+header = """// this file generated for parakeyt
+#pragma once
+#include "class/hid/hid.h"
 
-# get column by position
-# RET col: int
-col_cnt = 0
-col_map = {}
-def get_col_from_pos(pos):
-    global col_map, col_cnt
-    key = str(math.floor(pos[0]))
-    if not (key in col_map):
-        col_map[key] = col_cnt
-        col_cnt += 1;
-    return col_map[key]
+// parameters
+#define THRESH 50
+#define NKRO 6
+#define POLL 1
 
-# get row by position
-# RET row: int
-row_cnt = 0
-row_map = {}
-def get_row_from_pos(pos):
-    global row_map, row_cnt
-    key = str(math.floor(pos[1]))
-    if not (key in row_map):
-        row_map[key] = row_cnt
-        row_cnt += 1;
-    return row_map[key]
+"""
 
 # convert json string to config.h
-# RET (cfg: string, isvalid: bool)
-def convert(json_s):
-    # clear
-    global col_cnt, row_cnt, row_map, col_map
-    col_cnt = row_cnt = 0
-    col_map = {}
-    row_map = {}
-
+def convert(json_s: str) -> (str, bool):
     # start
     vprint("converting json")
     cfg = json.loads(json_s);
     s = ""
     isvalid = True
 
-    # key layers
-    vprint('deriving key layers')
-    if 'mapping' in cfg:
-        m_len = len(cfg.mapping[0])
-        trail = ", \\\n"
+    rows = set()
+    cols = set()
 
-        s += "#define KEY_LAYERS = ["
-        for mapping in cfg.mapping:
-            if len(mapping) != m_len:
-                vprint(f"mapping len {len(mapping)} != {m_len}")
-                print('WARN: no mapping defined. firmware may not function!')
-                isvalid = False
-
-            # TODO get every1 on the KC stuff ima use
-            s += mapping.to_string()
-            s += trail
-        s = s[:-1*len(trail)] # remove trailing comma
-        s += "]\n"
+    # internal rep.
+    vprint("deriving internal representation")
+    internal_keys = []
+    if 'keys' in cfg:
+        for key in cfg.get('keys'):
+            x = math.floor(int(key.get('x')))  # TODO bad
+            y = math.floor(int(key.get('y')))  # TODO bad
+            internal_keys.append(ConfigKey.from_label(y, x, key.get('label')))
+            rows.add(x)
+            cols.add(y)
     else:
         print('WARN: no mapping defined. firmware will not compile!')
         isvalid = False
 
-    # pinout
-    vprint('deriving pinout')
-    if 'keys' in cfg:
-        trail = ", "
+    # header
+    s += header
 
-        # sort keys to maintain alg precondition
-        keys = sorted(cfg['keys'], key=lambda x: 1000*x['pos'][0] + x['pos'][1])
+    # adc cnt
+    vprint("calculating IO map")
+    adcs = math.ceil(len(cols) % 8)
+    drivers = math.ceil(len(rows) % 8)
 
-        # key pinout
-        s += "#define KEY_PINS = ["
-        for key in keys:
-            row = get_row_from_pos(key['pos'])
-            col = get_col_from_pos(key['pos'])
-            s += f"[{row}, {col}]"
-            s += trail
-        s = s[:-1*len(trail)]
-        s += "]\n"
+    s += "// IO expanders\n"
+    s += f"#define ADC_CNT {adcs}\n"
+    s += f"#define DRIVER_CNT {drivers}\n"
 
-        # n adcs
-        n_adcs = math.ceil(col_cnt / PINS_PER_ADC)
-        s += f"#define ADC_CNT {n_adcs}\n"
+    s += "#define ADC_ADDRS { 0x17 }\n" # TODO
+    s += "#define DRIVER_ADDRS { 0x16 }\n" # TODO
+    s += "\n"
 
-        # n drivers
-        n_drivers = math.ceil(row_cnt / PINS_PER_DRIVER)
-        s += f"#define DRIVER_CNT {n_drivers}\n"
-    else:
-        print('WARN: no keys defined. firmware will not compile!')
-        isvalid = False
+    # dimensions
+    vprint("dimensions")
+    s += "// dimensions\n"
+    s += "#define LAYERS 1\n"
+    s += f"#define ROWS {len(rows)}\n"
+    s += f"#define COLUMNS {len(cols)}\n"
+    s += "\n"
 
-    # sanity check
-    vprint('performing sanity checks')
-    if isvalid and (len(cfg.keys != cfg.mapping[0])):
-        print('WARN: mismatch between number of keys and mapping. firmware will not compile!')
-        isvalid = False
+    # rowmap
+    vprint("generating row mapping")
+    s +="// rows: {driver, pin}\n"
+
+    s += "#define ROWS_MAP { "
+    for row in rows:
+        s += f"{{ 0, {7 - row} }}, "
+    s = s[:len(s)-2]
+    s += " }\n"
+    s += "\n"
+
+    # colmap
+    vprint("generating column mapping")
+    s +="// cols: {driver, pin}\n"
+
+    s += "#define COLS_MAP { "
+    for col in cols:
+        s += f"{{ 0, {col} }}, "
+    s = s[:len(s)-2]
+    s += " }\n"
+    s += "\n"
+
+    # keycode map
+    vprint("generating keycode mapping")
+    keymap = [["HID_KEY_NONE"] * len(cols) for _ in range(len(rows))]
+    for key in internal_keys:
+        keymap[key.row][key.col] = key.code
+        vprint(f"{key.row}, {key.col}, {key.code}")
+
+    s += "// keymap[layers][rows][cols]\n"
+    s += "#define KEYCODE_MAP { { \\\n"
+    for r in keymap:
+        s += "{ "
+        for c in r:
+            s += f"{c}, "
+        s = s[:len(s)-2]
+        s += " }, \\\n"
+    s = s[:len(s)-4]
+    s += "  \\\n} }\n"
 
     return (s, isvalid)
 
-
-# run a single test
-failures = []
-passes = []
-def test(name, j, r):
-    global failures, passes
-    print(name)
-    c, _ = convert(j)
-    if c == r:
-        passes.append(name)
-        print('PASS')
-    else:
-        failures.append(name)
-        print("EXPECTED:\n\n")
-        print(r)
-
-        print("\n\nGOT:\n\n")
-        print(c)
-
-        print("\n\nFAILURE")
-
-# run tests
-def run_tests():
-    # simple keys
-    j = '{"keys": [ {"pos": [0,1,2], "size": 1 }, {"pos": [3,4,5], "size": 1 } ]}'
-    r = '''#define KEY_PINS = [[0, 0], [1, 1]]
-#define ADC_CNT 1
-#define DRIVER_CNT 1
-'''
-    test("simple keys", j, r)
-
-    print("\n\nTest summary:")
-    for p in passes:
-        print(f"PASS: {p}")
-    print()
-    for f in failures:
-        print(f"FAILURE: {f}")
-
 # run
-if args.verb == "test":
-    print("running tests")
-    run_tests()
-elif args.verb == "convert" and args.infile != args.outfile != None:
+if args.infile != args.outfile != None:
     s = ""
     # read infile to string
-    vprint(f"reading {infile}")
-    with open(infile, 'r') as f:
+    vprint(f"reading {args.infile}")
+    with open(args.infile, 'r') as f:
         data = f.read()
         # convert
         s, isvalid = convert(data)
@@ -177,12 +159,12 @@ elif args.verb == "convert" and args.infile != args.outfile != None:
             print("output config may be malformed!")
 
     # output to outfile
-    vprint(f"writing {outfile}")
-    with open("Output.txt", "w+") as f:
+    vprint(f"writing {args.outfile}")
+    with open(args.outfile, "w+") as f:
         f.write(s)
     print("conversion done")
 else:
-    print("please specify verb as either 'test' or 'convert' with in/out files")
+    print("argument error")
 
 exit()
 

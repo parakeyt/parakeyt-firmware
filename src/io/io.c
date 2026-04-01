@@ -14,8 +14,7 @@
 #include "../../include/io/TLA2528.h"
 #include "../../include/io/MCP23008.h"
 
-#define FAST_BAUD (4700 * 1000)
-//const uint SLOW_BAUD = 400 * 1000; // 400 khz
+#define BAUD (400 * 1000)
 
 const uint8_t rowmap[ROWS][2] = ROWS_MAP;
 const uint8_t colmap[COLUMNS][2] = COLS_MAP;
@@ -29,7 +28,7 @@ const uint8_t driver_addrs[DRIVER_CNT] = DRIVER_ADDRS;
 void init_pins(void)
 {
 	// init i2c0
-	i2c_init(i2c0, FAST_BAUD);
+	i2c_init(i2c0, BAUD);
 	gpio_set_function(0, GPIO_FUNC_I2C);
 	gpio_set_function(1, GPIO_FUNC_I2C);
 	gpio_pull_up(0);
@@ -59,6 +58,7 @@ void read_col(uint n, uint16_t *buf)
 	uint8_t adc = colmap[n][0];
 	uint8_t pin = colmap[n][1];
 	read_TLA2528(&adcs[adc], pin, buf);
+	sleep_ms(5); // TODO pull-down resistor?
 }
 
 void enable_row(uint n)
@@ -66,7 +66,7 @@ void enable_row(uint n)
 	uint8_t driver = rowmap[n][0];
 	uint8_t pin = rowmap[n][1];
 	write_TLA2528(&drivers[driver], pin);
-	sleep_ms(50); // TODO pull-down resistor?
+	sleep_ms(5); // TODO pull-down resistor?
 }
 
 #define LED_PIN 16

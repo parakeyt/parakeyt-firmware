@@ -36,7 +36,7 @@ int main()
 		;
 }
 
-#define POLLS 15
+#define POLLS 2
 static uint16_t matrix[ROWS][COLUMNS] = { 0 };
 void run_core0()
 {
