@@ -25,6 +25,7 @@
 
 #include "tusb.h"
 #include "../include/usb_descriptors.h"
+#include "../config/config.h"
 
 /* A combination of interfaces must have a unique product id, since PC will save device driver after the first plug.
  * Same VID/PID with different interface e.g MSC (first), then CDC (later) will possibly cause system error on PC.
@@ -98,7 +99,7 @@ uint8_t const desc_configuration[] = {
 
 	// Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval
 	TUD_HID_DESCRIPTOR(ITF_NUM_HID, 0, HID_ITF_PROTOCOL_NONE, sizeof(desc_hid_report), EPNUM_HID,
-			   CFG_TUD_HID_EP_BUFSIZE, 5)
+			   CFG_TUD_HID_EP_BUFSIZE, POLL)
 };
 
 #if TUD_OPT_HIGH_SPEED

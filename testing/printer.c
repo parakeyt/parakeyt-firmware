@@ -53,9 +53,9 @@ void run_core0()
 			}
 		}
 		uint64_t dt = time_us_64() - st;
-		set_onboard_led(0, 25, 0);
 
 		// print
+		set_onboard_led(0, 25, 0);
 		printf("final state at %lli ms:\n", st / 1000);
 		for (int i = 0; i < ROWS; ++i) {
 			for (int j = 0; j < COLUMNS; ++j) {

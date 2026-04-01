@@ -68,8 +68,8 @@ void add_to_report(uint8_t i, uint8_t j)
 		return;
 	}
 
+	// add in first available report slot
 	mutex_enter_blocking(&hid_report_mutex);
-	// otherwise, add in first available report slot
 	for (int k = 0; k < NKRO; ++k) {
 		if (report_data[k] == 0) {
 			report_data[k] = keymap[layer][i][j];
@@ -88,6 +88,8 @@ void remove_from_report(uint8_t i, uint8_t j)
 	if (report_cnt <= 0) {
 		return;
 	}
+
+	// remove from saved report slot
 	mutex_enter_blocking(&hid_report_mutex);
 	report_data[pressed[i][j] - 1] = 0;
 	pressed[i][j] = 0;
@@ -189,7 +191,7 @@ static void send_hid_report(bool keys_pressed)
 
 void hid_task(void)
 {
-	const uint32_t interval_ms = 10;
+	const uint32_t interval_ms = POLL;
 	static uint32_t start_ms = 0;
 
 	if (board_millis() - start_ms < interval_ms) {

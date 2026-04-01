@@ -1,9 +1,11 @@
+#pragma once
 // hand-written config.h for the 4x4 reference design
 #include "class/hid/hid.h"
 
 // parameters
 #define THRESH 30
 #define NKRO 6
+#define POLL 1
 
 // it is currently assumed all expanders are on i2c0
 #define ADC_CNT 1
