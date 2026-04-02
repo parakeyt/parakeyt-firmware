@@ -1,7 +1,12 @@
 #!/bin/bash
+cd "$(dirname $0)"
 export PICO_SDK_PATH=/opt/pico-sdk/
-export PICO_EXTRAS_PATH=/opt/pico-extras/
+#export PICO_EXTRAS_PATH=/opt/pico-extras/
 export PICO_PLATFORM=rp2040
+
+if [[ -f "$PWD/pico-sdk" ]]; then
+    export PICO_SDK_PATH="$PWD/pico-sdk"
+fi
 
 mkdir -p "build/" && cd "build/"
 if [[ "$?" != 0 ]]; then

@@ -11,8 +11,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import cKDTree
 
 # parameters
-ROWS = 16
-COLS = 16
+ROWS = 8
+COLS = 8
 
 
 # data
@@ -80,12 +80,12 @@ colors = plt.cm.viridis(norm(dz))
 ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colors, shade=True)
 
 ax.set_xlabel("Rows")
-ax.set_ylabel("Colums")
+ax.set_ylabel("Columns")
 ax.set_zlabel("Polling Rate (Hz)")
 ax.set_zlim(0, 1000)
 
 ax.set_title(
-    "Projected Parakeyt Polling Rate Scaling on Rectangular Layout Without Row or i2c Optimization (1000Hz cap)"
+    "Real Parakeyt Polling Rate Scaling on Rectangular Layout\n(Without Row or i2c Optimization)"
 )
 
 plt.tight_layout()

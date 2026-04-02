@@ -6,16 +6,33 @@ from dataclasses import dataclass
 
 # obj
 lut = {
-    '+': 'KEYPAD_ADD',
-    '-': 'KEYPAD_SUBTRACT',
-    'RET': 'RETURN',
-    '.': "PERIOD",
-    '/': "SLASH",
-    '*': "KEYPAD_MULTIPLY",
+    "+": "KEYPAD_ADD",
+    "-": "KEYPAD_SUBTRACT",
+    "RET": "RETURN",
+    ".": "PERIOD",
+    "/": "SLASH",
+    "*": "KEYPAD_MULTIPLY",
+    "`": "GRAVE",
+    ";": "SEMICOLON",
+    "'": "APOSTROPHE",
+    ",": "COMMA",
+    "CTRL": "NONE",
+    "CAPS": "NONE",
+    "ALT": "NONE",
+    "SHIFT": "NONE",
+    "[": "NONE",
+    "]": "NONE",
+    "WIN": "NONE",
+    "=": "NONE",
+    "BKSP": "NONE",
+    "\\": "NONE",
 }
+
+
 @dataclass
 class ConfigKey:
     """A key from config.json"""
+
     row: int
     col: int
     code: str
@@ -25,19 +42,24 @@ class ConfigKey:
         if label in lut:
             label = lut.get(label)
         label = f"HID_KEY_{label}"
-        return ConfigKey(row,col,label) # TODO
+        return ConfigKey(row, col, label)  # TODO
+
 
 # set up args
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--infile", help="input config.json file location")
 parser.add_argument("-o", "--outfile", help="output config.h file location")
-parser.add_argument("-v", "--verbose", help="print useless logging", action="store_true")
+parser.add_argument(
+    "-v", "--verbose", help="print useless logging", action="store_true"
+)
 args = parser.parse_args()
+
 
 # verbose print
 def vprint(s):
     if args.verbose:
         print(s)
+
 
 vprint("verbose logging is enabled")
 
@@ -53,11 +75,12 @@ header = """// this file generated for parakeyt
 
 """
 
+
 # convert json string to config.h
 def convert(json_s: str) -> (str, bool):
     # start
     vprint("converting json")
-    cfg = json.loads(json_s);
+    cfg = json.loads(json_s)
     s = ""
     isvalid = True
 
@@ -67,15 +90,15 @@ def convert(json_s: str) -> (str, bool):
     # internal rep.
     vprint("deriving internal representation")
     internal_keys = []
-    if 'keys' in cfg:
-        for key in cfg.get('keys'):
-            x = math.floor(int(key.get('x')))  # TODO bad
-            y = math.floor(int(key.get('y')))  # TODO bad
-            internal_keys.append(ConfigKey.from_label(y, x, key.get('label')))
-            rows.add(x)
-            cols.add(y)
+    if "keys" in cfg:
+        for key in cfg.get("keys"):
+            x = math.floor(int(key.get("x")))  # TODO bad
+            y = math.floor(int(key.get("y")))  # TODO bad
+            internal_keys.append(ConfigKey.from_label(y, x, key.get("label")))
+            rows.add(y)
+            cols.add(x)
     else:
-        print('WARN: no mapping defined. firmware will not compile!')
+        print("WARN: no mapping defined. firmware will not compile!")
         isvalid = False
 
     # header
@@ -90,8 +113,8 @@ def convert(json_s: str) -> (str, bool):
     s += f"#define ADC_CNT {adcs}\n"
     s += f"#define DRIVER_CNT {drivers}\n"
 
-    s += "#define ADC_ADDRS { 0x17 }\n" # TODO
-    s += "#define DRIVER_ADDRS { 0x16 }\n" # TODO
+    s += "#define ADC_ADDRS { 0x17 }\n"  # TODO
+    s += "#define DRIVER_ADDRS { 0x16 }\n"  # TODO
     s += "\n"
 
     # dimensions
@@ -104,23 +127,23 @@ def convert(json_s: str) -> (str, bool):
 
     # rowmap
     vprint("generating row mapping")
-    s +="// rows: {driver, pin}\n"
+    s += "// rows: {driver, pin}\n"
 
     s += "#define ROWS_MAP { "
     for row in rows:
         s += f"{{ 0, {7 - row} }}, "
-    s = s[:len(s)-2]
+    s = s[: len(s) - 2]
     s += " }\n"
     s += "\n"
 
     # colmap
     vprint("generating column mapping")
-    s +="// cols: {driver, pin}\n"
+    s += "// cols: {driver, pin}\n"
 
     s += "#define COLS_MAP { "
     for col in cols:
         s += f"{{ 0, {col} }}, "
-    s = s[:len(s)-2]
+    s = s[: len(s) - 2]
     s += " }\n"
     s += "\n"
 
@@ -137,19 +160,20 @@ def convert(json_s: str) -> (str, bool):
         s += "{ "
         for c in r:
             s += f"{c}, "
-        s = s[:len(s)-2]
+        s = s[: len(s) - 2]
         s += " }, \\\n"
-    s = s[:len(s)-4]
+    s = s[: len(s) - 4]
     s += "  \\\n} }\n"
 
     return (s, isvalid)
+
 
 # run
 if args.infile != args.outfile != None:
     s = ""
     # read infile to string
     vprint(f"reading {args.infile}")
-    with open(args.infile, 'r') as f:
+    with open(args.infile, "r") as f:
         data = f.read()
         # convert
         s, isvalid = convert(data)
@@ -167,4 +191,3 @@ else:
     print("argument error")
 
 exit()
-
