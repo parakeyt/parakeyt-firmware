@@ -24,10 +24,10 @@ if [[ "$?" != 0 ]]; then
     exit
 fi
 
-PICO_DIR="/run/media/me/RPI-RP2/"
-if [[ -f "$PICO_DIR/INFO_UF2.TXT" ]]; then
-    echo "moving fw to $PICO_DIR"
-    cp "./parakeyt_fw.uf2" "$PICO_DIR"
+PICO_USB_DIR="/run/media/$USER/RPI-RP2/"
+if [[ -f "$PICO_USB_DIR/INFO_UF2.TXT" ]]; then
+    echo "moving fw to $PICO_USB_DIR"
+    cp "./parakeyt_fw.uf2" "$PICO_USB_DIR"
 fi
 
 if [[ "$1" != "" ]]; then
