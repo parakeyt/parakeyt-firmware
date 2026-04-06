@@ -1,10 +1,13 @@
 #!/bin/bash
 cd "$(dirname $0)"
-export PICO_SDK_PATH=/opt/pico-sdk/
-#export PICO_EXTRAS_PATH=/opt/pico-extras/
 export PICO_PLATFORM=rp2040
 
-if [[ -f "$PWD/pico-sdk" ]]; then
+if [[ PICO_SDK_PATH == "" ]]; then
+    export PICO_SDK_PATH="/opt/pico-sdk/"
+fi
+
+if [[ ! -d "$PICO_SDK_PATH" ]]; then
+    git clone "https://github.com/raspberrypi/pico-sdk" "$PWD/pico-sdk" --depth 1
     export PICO_SDK_PATH="$PWD/pico-sdk"
 fi
 
