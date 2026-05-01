@@ -24,7 +24,7 @@ static mutex_t hid_report_mutex;
 
 int main()
 {
-	bi_decl(bi_program_description("Pico hall adc test"));
+	bi_decl(bi_program_description("ParaKeyt Firmware"));
 
 	// init
 	set_sys_clock_khz(200000, 1); // overclock
@@ -51,7 +51,7 @@ int main()
 static uint16_t matrix[ROWS][COLUMNS] = { 0 };
 
 // pressed is zero when not press, index + 1 of corresponding report_data when pressed.
-static uint8_t pressed[ROWS][COLUMNS] = { 0 };
+static uint16_t pressed[ROWS][COLUMNS] = { 0 };
 
 // keymap
 static uint8_t layer = 0; // current layer
@@ -61,6 +61,7 @@ static uint8_t keymap[LAYERS][ROWS][COLUMNS] = KEYCODE_MAP;
 static bool keys_pressed = false;
 static uint8_t report_data[NKRO] = { 0 };
 static uint8_t report_cnt = 0;
+static uint8_t modifiers = 0;
 
 void add_to_report(uint8_t i, uint8_t j)
 {
@@ -69,11 +70,19 @@ void add_to_report(uint8_t i, uint8_t j)
 		return;
 	}
 
+	uint8_t keycode = keymap[layer][i][j];
+
+	// is modifier, special case
+	if (false) { // TODO
+		modifiers = modifiers | keycode;
+		return;
+	}
+
 	// add in first available report slot
 	mutex_enter_blocking(&hid_report_mutex);
 	for (int k = 0; k < NKRO; ++k) {
 		if (report_data[k] == 0) {
-			report_data[k] = keymap[layer][i][j];
+			report_data[k] = keycode;
 			pressed[i][j] = k + 1;
 			++report_cnt;
 			keys_pressed = true;
@@ -87,6 +96,13 @@ void remove_from_report(uint8_t i, uint8_t j)
 {
 	// do nothing if it certainly not pressed
 	if (report_cnt <= 0) {
+		return;
+	}
+
+	// is modifier, special case
+	if (false) { // TODO
+		uint8_t keycode = keymap[layer][i][j];
+		modifiers = modifiers & !keycode;
 		return;
 	}
 
@@ -123,7 +139,7 @@ void update_report_data(uint16_t last, uint16_t i, uint16_t j)
 	// currently pressed
 	else {
 		// downward motion (smaller number means furthes pressed)
-		if (last > cur) {
+		if (last >= cur) {
 			// do nothing, new lowest point is cur!
 		}
 		// upward motion
@@ -146,6 +162,7 @@ void run_core1()
 		// run
 		for (int i = 0; i < ROWS; ++i) {
 			enable_row(i);
+			//			sleep_ms(10);
 			for (int j = 0; j < COLUMNS; ++j) {
 				if (keymap[layer][i][j] != HID_KEY_NONE) {
 					uint16_t last = matrix[i][j];
@@ -178,14 +195,14 @@ static void send_hid_report(bool keys_pressed)
 			set_onboard_led(25, 0, 0);
 		}
 		mutex_enter_blocking(&hid_report_mutex);
-		tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, report_data);
+		tud_hid_keyboard_report(REPORT_ID_KEYBOARD, modifiers, report_data);
 		mutex_exit(&hid_report_mutex);
 		send_empty = true;
 	} else {
 		// send empty key report if previously has key pressed
 		if (send_empty) {
 			set_onboard_led(25, 0, 25);
-			tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, NULL);
+			tud_hid_keyboard_report(REPORT_ID_KEYBOARD, modifiers, NULL);
 		}
 		send_empty = false;
 	}

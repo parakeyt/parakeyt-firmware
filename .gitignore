@@ -60,4 +60,4 @@ dkms.conf
 *.save
 /build/
 .#*
-
+pico-sdk
