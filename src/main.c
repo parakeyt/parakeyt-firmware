@@ -9,6 +9,7 @@
 #include "hardware/vreg.h"
 #include "hardware/clocks.h"
 
+#include "class/hid/hid.h"
 #include "bsp/board.h"
 #include "tusb.h"
 
@@ -146,9 +147,11 @@ void run_core1()
 		for (int i = 0; i < ROWS; ++i) {
 			enable_row(i);
 			for (int j = 0; j < COLUMNS; ++j) {
-				uint16_t last = matrix[i][j];
-				read_col(j, &matrix[i][j]);
-				update_report_data(last, i, j);
+				if (keymap[layer][i][j] != HID_KEY_NONE) {
+					uint16_t last = matrix[i][j];
+					read_col(j, &matrix[i][j]);
+					update_report_data(last, i, j);
+				}
 			}
 		}
 	}
@@ -168,15 +171,15 @@ static void send_hid_report(bool keys_pressed)
 		return;
 	}
 
-	mutex_enter_blocking(&hid_report_mutex);
-
 	static bool send_empty = false;
 
 	if (keys_pressed) {
 		if (!send_empty) {
 			set_onboard_led(25, 0, 0);
 		}
+		mutex_enter_blocking(&hid_report_mutex);
 		tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, report_data);
+		mutex_exit(&hid_report_mutex);
 		send_empty = true;
 	} else {
 		// send empty key report if previously has key pressed
@@ -186,7 +189,6 @@ static void send_hid_report(bool keys_pressed)
 		}
 		send_empty = false;
 	}
-	mutex_exit(&hid_report_mutex);
 }
 
 void hid_task(void)

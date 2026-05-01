@@ -8,6 +8,8 @@
 #include "hardware/vreg.h"
 #include "hardware/clocks.h"
 
+#include "class/hid/hid.h"
+
 #include "../include/io/io.h"
 #include "../config/config.h"
 
@@ -36,8 +38,10 @@ int main()
 		;
 }
 
-#define POLLS 2
+#define POLLS 200
 static uint16_t matrix[ROWS][COLUMNS] = { 0 };
+static uint8_t keymap[LAYERS][ROWS][COLUMNS] = KEYCODE_MAP;
+
 void run_core0()
 {
 	while (1) {
@@ -59,7 +63,9 @@ void run_core0()
 		printf("final state at %lli ms:\n", st / 1000);
 		for (int i = 0; i < ROWS; ++i) {
 			for (int j = 0; j < COLUMNS; ++j) {
-				printf("[%i] ", matrix[i][j]);
+				if (keymap[0][i][j] != HID_KEY_NONE) {
+					printf("[%i] ", matrix[i][j]);
+				}
 			}
 			printf("\n");
 		}
